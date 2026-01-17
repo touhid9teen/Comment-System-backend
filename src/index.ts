@@ -3,7 +3,6 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
-import mongoSanitize from "express-mongo-sanitize";
 import { config } from "./config/env.js";
 import { connectMongoDB, connectRedis } from "./config/database.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -17,7 +16,33 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(mongoSanitize());
+
+// Custom sanitization middleware (replaces express-mongo-sanitize)
+app.use((req, res, next) => {
+  const sanitizeObject = (obj: any): any => {
+    if (obj === null || obj === undefined) return obj;
+    if (typeof obj !== "object") return obj;
+
+    if (Array.isArray(obj)) {
+      return obj.map(sanitizeObject);
+    }
+
+    const sanitized: any = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        // Remove $ and . from keys to prevent MongoDB injection
+        const sanitizedKey = key.replace(/^\$|^\./g, "");
+        sanitized[sanitizedKey] = sanitizeObject(obj[key]);
+      }
+    }
+    return sanitized;
+  };
+
+  req.body = sanitizeObject(req.body);
+  req.params = sanitizeObject(req.params);
+
+  next();
+});
 
 // Database Connections
 import passport from "passport";
@@ -27,10 +52,12 @@ const initializeServices = async () => {
   await connectMongoDB();
   await connectRedis();
   configurePassport();
-  app.use(passport.initialize());
 };
 
-initializeServices();
+await initializeServices();
+
+// Initialize Passport BEFORE routes
+app.use(passport.initialize());
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -54,7 +81,7 @@ app.use(
     err: any,
     _req: express.Request,
     res: express.Response,
-    _next: express.NextFunction,
+    _next: express.NextFunction
   ) => {
     console.error("Unhandled Error:", err);
     res.status(500).json({
@@ -62,7 +89,7 @@ app.use(
       message: "Internal server error",
       error: config.NODE_ENV === "development" ? err.message : undefined,
     });
-  },
+  }
 );
 
 const PORT = config.PORT;

@@ -5,17 +5,16 @@ import {
   validateGoogleAuth,
   handleValidationErrors,
 } from "../validation/authValidation.js";
+import passport from "passport";
 
 const router = express.Router();
 
 // Public routes
 
-import passport from "passport";
-
 // Google OAuth Routes
 router.get(
   "/google",
-  passport.authenticate("google", { scope: ["profile", "email"] }),
+  passport.authenticate("google", { scope: ["profile", "email"] })
 );
 
 router.get(
@@ -24,7 +23,7 @@ router.get(
     session: false,
     failureRedirect: "/login",
   }),
-  authController.googleCallback,
+  authController.googleCallback
 );
 
 // Manual Google Token Verification (Keep if needed for mobile/other clients)
@@ -32,7 +31,7 @@ router.post(
   "/google/token",
   validateGoogleAuth,
   handleValidationErrors,
-  authController.googleAuth,
+  authController.googleAuth
 );
 
 router.post("/refresh-token", authController.refreshToken);

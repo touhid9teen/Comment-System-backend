@@ -1,9 +1,10 @@
 import mongoose from "mongoose";
 import { createClient } from "redis";
+import { config } from "./env.js";
 
 export const connectMongoDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI!);
+    await mongoose.connect(config.MONGODB_URI);
     console.log("MongoDB connected");
   } catch (error) {
     console.error("MongoDB connection error:", error);
@@ -12,11 +13,11 @@ export const connectMongoDB = async () => {
 
 // Redis Connection
 export const redisClient = createClient({
-  username: process.env.REDIS_USERNAME!,
-  password: process.env.REDIS_PASSWORD!,
+  username: config.REDIS_USERNAME,
+  password: config.REDIS_PASSWORD,
   socket: {
-    host: process.env.REDIS_HOST!,
-    port: parseInt(process.env.REDIS_PORT!),
+    host: config.REDIS_HOST,
+    port: config.REDIS_PORT,
   },
 });
 

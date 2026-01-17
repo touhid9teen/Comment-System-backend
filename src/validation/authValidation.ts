@@ -23,7 +23,4 @@ const handleValidationErrors = (
   next();
 };
 
-export const authValidation = {
-  validateGoogleAuth,
-  handleValidationErrors,
-};
+export { validateGoogleAuth, handleValidationErrors };

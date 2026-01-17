@@ -20,9 +20,14 @@ app.use(cookieParser());
 app.use(mongoSanitize());
 
 // Database Connections
+import passport from "passport";
+import { configurePassport } from "./config/passport.js";
+
 const initializeServices = async () => {
   await connectMongoDB();
   await connectRedis();
+  configurePassport();
+  app.use(passport.initialize());
 };
 
 initializeServices();

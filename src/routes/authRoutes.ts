@@ -9,8 +9,27 @@ import {
 const router = express.Router();
 
 // Public routes
-router.post(
+
+import passport from "passport";
+
+// Google OAuth Routes
+router.get(
   "/google",
+  passport.authenticate("google", { scope: ["profile", "email"] }),
+);
+
+router.get(
+  "/google/callback",
+  passport.authenticate("google", {
+    session: false,
+    failureRedirect: "/login",
+  }),
+  authController.googleCallback,
+);
+
+// Manual Google Token Verification (Keep if needed for mobile/other clients)
+router.post(
+  "/google/token",
   validateGoogleAuth,
   handleValidationErrors,
   authController.googleAuth,

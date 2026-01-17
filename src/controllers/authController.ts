@@ -8,7 +8,41 @@ import { redisClient } from "../config/database.js";
 const googleClient = new OAuth2Client(config.GOOGLE_CLIENT_ID);
 
 class AuthController {
-  // Google OAuth callback
+  async googleCallback(req: Request, res: Response) {
+    try {
+      const user = req.user as any;
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: "Authentication failed",
+        });
+      }
+
+      // Generate tokens
+      const { accessToken, refreshToken } = authService.generateTokens(user);
+
+      // Store refresh token in Redis
+      await redisClient.setEx(
+        `refresh:${(user as any)._id}`,
+        7 * 24 * 60 * 60,
+        refreshToken,
+      );
+
+      // Redirect to frontend with tokens (or set cookies)
+      // For this example, we'll redirect with tokens in query params
+      // In production, consider using secure cookies or a temporary code exchange flow
+
+      const clientUrl = config.CLIENT_URL; // e.g., http://localhost:3000
+      res.redirect(
+        `${clientUrl}/auth/success?accessToken=${accessToken}&refreshToken=${refreshToken}`,
+      );
+    } catch (error) {
+      console.error("Google callback error:", error);
+      res.redirect(`${config.CLIENT_URL}/login?error=auth_failed`);
+    }
+  }
+
+  // Google OAuth callback (manual token verification - kept for reference or mobile/frontend-only flows)
   async googleAuth(req: Request, res: Response) {
     try {
       const { token } = req.body;
@@ -152,7 +186,7 @@ class AuthController {
       }
 
       // Remove refresh token
-      await redisClient.del(`refresh:${user._id}`);
+      await redisClient.del(`refresh:${(user as any)._id}`);
 
       res.status(200).json({
         success: true,

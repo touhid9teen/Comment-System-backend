@@ -102,7 +102,8 @@ export const optionalAuth = async (
 };
 
 export const checkAdmin = (req: Request, res: Response, next: NextFunction) => {
-  if (req.user?.role === "admin") {
+  const user = req.user as IUser | undefined;
+  if (user?.role === "admin") {
     return next();
   }
 

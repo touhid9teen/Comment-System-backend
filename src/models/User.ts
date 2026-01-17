@@ -35,7 +35,7 @@ const userSchema = new Schema<IUser>(
     },
     oauthProvider: {
       type: String,
-      enum: ["google", "github", "local"],
+      enum: ["google", "local"],
       default: "local",
     },
     oauthId: {

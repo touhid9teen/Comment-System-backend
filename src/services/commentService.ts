@@ -1,5 +1,6 @@
-import { Comment, IComment } from "../models/Comment.js";
-import { User } from "../models/User.js";
+import { Comment } from "../models/Comment.js";
+import type { IComment } from "../models/Comment.js";
+import User from "../models/User.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { Types } from "mongoose";
 import { redisClient } from "../config/database.js";
@@ -20,9 +21,9 @@ interface ReactCommentData {
 }
 
 interface GetCommentsOptions {
-  page?: number;
-  limit?: number;
-  sortBy?: "newest" | "most-liked" | "most-disliked";
+  page?: number | undefined;
+  limit?: number | undefined;
+  sortBy?: "newest" | "most-liked" | "most-disliked" | undefined;
   parentId?: string | null | undefined;
 }
 
@@ -174,7 +175,7 @@ export class CommentService {
         email: (comment as any).userId.email,
         avatar: (comment as any).userId.avatar,
       },
-    } as CommentWithUser;
+    } as unknown as CommentWithUser;
   }
 
   // Update comment

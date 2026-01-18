@@ -1,4 +1,4 @@
-import { Response } from "express";
+import type { Response } from "express";
 import type { Request as AuthRequest } from "express"; // Using express Request as it is augmented in your types
 import { CommentService } from "../services/commentService.js";
 import { asyncHandler, AppError } from "../middleware/errorHandler.js";
@@ -68,7 +68,7 @@ export const getCommentById = asyncHandler(
   async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
 
-    const comment = await commentService.getCommentById(id);
+    const comment = await commentService.getCommentById(id as string);
 
     if (!comment) {
       throw new AppError("Comment not found", 404);
@@ -93,9 +93,13 @@ export const updateComment = asyncHandler(
     const { id } = req.params;
     const { content } = req.body as { content: string };
 
-    const comment = await commentService.updateComment(id, req.user.id, {
-      content,
-    });
+    const comment = await commentService.updateComment(
+      id as string,
+      req.user!.id,
+      {
+        content,
+      },
+    );
 
     res.json({
       success: true,
@@ -116,7 +120,7 @@ export const deleteComment = asyncHandler(
 
     const { id } = req.params;
 
-    await commentService.deleteComment(id, req.user.id);
+    await commentService.deleteComment(id as string, req.user!.id);
 
     res.json({
       success: true,
@@ -137,8 +141,8 @@ export const reactToComment = asyncHandler(
     const { id } = req.params;
     const { type } = req.body as { type: "like" | "dislike" };
 
-    const comment = await commentService.reactToComment(id, {
-      userId: req.user.id,
+    const comment = await commentService.reactToComment(id as string, {
+      userId: req.user!.id,
       type,
     });
 
@@ -165,7 +169,7 @@ export const getReplies = asyncHandler(
       | "most-disliked"
       | undefined;
 
-    const result = await commentService.getReplies(id, {
+    const result = await commentService.getReplies(id as string, {
       page,
       limit,
       sortBy,

@@ -11,7 +11,7 @@ export const configurePassport = () => {
       {
         clientID: config.GOOGLE_CLIENT_ID,
         clientSecret: config.GOOGLE_CLIENT_SECRET,
-        callbackURL: "/api/auth/google/callback",
+        callbackURL: `${config.SERVER_URL}/api/auth/google/callback`,
         passReqToCallback: false, // Don't pass request to callback
       },
       async (

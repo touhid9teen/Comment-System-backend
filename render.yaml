@@ -9,3 +9,5 @@ services:
         value: production
       - key: NODE_VERSION
         value: 20.0.0
+      - key: SERVER_URL
+        value: https://comment-system-backend-7teb.onrender.com

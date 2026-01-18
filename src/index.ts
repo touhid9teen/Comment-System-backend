@@ -92,7 +92,12 @@ app.use("/api/comments", commentRoutes);
 
 // Health check
 app.get("/health", (_req, res) => {
-  res.status(200).json({ success: true, message: "Server is running" });
+  res.status(200).json({
+    success: true,
+    message: "Server is running",
+    serverUrl: config.SERVER_URL,
+    env: config.NODE_ENV,
+  });
 });
 
 // 404 Handler
@@ -131,5 +136,6 @@ initializeSocket(httpServer);
 
 httpServer.listen(PORT, () => {
   console.log(`Server running in ${config.NODE_ENV} mode on port ${PORT}`);
+  console.log(`Base URL: ${config.SERVER_URL}`);
   console.log(`WebSocket server initialized`);
 });

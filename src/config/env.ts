@@ -33,6 +33,7 @@ interface EnvConfig {
   WS_PORT: number;
   SESSION_SECRET: string;
   ALLOWED_ORIGINS: string[];
+  SERVER_URL: string;
 }
 
 export const config: EnvConfig = {
@@ -61,11 +62,18 @@ export const config: EnvConfig = {
   ALLOWED_ORIGINS: (process.env.ALLOWED_ORIGINS || "")
     .split(",")
     .filter(Boolean),
+  SERVER_URL:
+    process.env.SERVER_URL || `http://localhost:${process.env.PORT || "4000"}`,
 };
 
 // Validate critical environment variables
 const validateEnv = (): void => {
-  const requiredVars = ["JWT_SECRET", "JWT_REFRESH_SECRET", "MONGODB_URI"];
+  const requiredVars = [
+    "JWT_SECRET",
+    "JWT_REFRESH_SECRET",
+    "MONGODB_URI",
+    "SERVER_URL",
+  ];
 
   const missing = requiredVars.filter((varName) => !process.env[varName]);
 

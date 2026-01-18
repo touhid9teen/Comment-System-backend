@@ -48,5 +48,8 @@
     "winston": "^3.19.0",
     "typescript": "^5.9.3",
     "@types/node": "^25.0.9"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

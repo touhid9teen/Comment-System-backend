@@ -119,6 +119,14 @@ app.use(
 
 const PORT = config.PORT;
 
-app.listen(PORT, () => {
+// Create HTTP server and initialize Socket.IO
+import { createServer } from "http";
+import { initializeSocket } from "./config/socket.js";
+
+const httpServer = createServer(app);
+initializeSocket(httpServer);
+
+httpServer.listen(PORT, () => {
   console.log(`Server running in ${config.NODE_ENV} mode on port ${PORT}`);
+  console.log(`WebSocket server initialized`);
 });

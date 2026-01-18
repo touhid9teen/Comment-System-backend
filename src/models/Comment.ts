@@ -20,7 +20,6 @@ const commentSchema = new Schema<IComment>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
     },
 
     content: {
@@ -35,14 +34,12 @@ const commentSchema = new Schema<IComment>(
       type: Schema.Types.ObjectId,
       ref: "Comment",
       default: null,
-      index: true,
     },
 
     likes: [
       {
         type: Schema.Types.ObjectId,
         ref: "User",
-        index: true,
       },
     ],
 
@@ -50,14 +47,12 @@ const commentSchema = new Schema<IComment>(
       {
         type: Schema.Types.ObjectId,
         ref: "User",
-        index: true,
       },
     ],
 
     isDeleted: {
       type: Boolean,
       default: false,
-      index: true,
     },
 
     isEdited: {
@@ -91,8 +86,10 @@ const commentSchema = new Schema<IComment>(
   },
 );
 
+// Compound indexes for efficient queries
 commentSchema.index({ createdAt: -1 });
 commentSchema.index({ parentId: 1, createdAt: -1 });
 commentSchema.index({ userId: 1 });
+commentSchema.index({ isDeleted: 1, parentId: 1 });
 
 export const Comment = mongoose.model<IComment>("Comment", commentSchema);

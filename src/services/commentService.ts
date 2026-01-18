@@ -4,6 +4,12 @@ import User from "../models/User.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { Types } from "mongoose";
 import { redisClient } from "../config/database.js";
+import {
+  emitCommentCreated,
+  emitCommentUpdated,
+  emitCommentDeleted,
+  emitCommentReacted,
+} from "../config/socket.js";
 
 interface CreateCommentData {
   userId: string;
@@ -34,6 +40,7 @@ interface CommentWithUser extends Omit<IComment, "userId"> {
     email: string;
     avatar?: string;
   };
+  replyCount: number;
 }
 
 export class CommentService {
@@ -63,8 +70,14 @@ export class CommentService {
       parentId: parentId ? new Types.ObjectId(parentId) : null,
     });
 
+    // Populate user data for socket emission
+    await comment.populate("userId", "name email avatar");
+
     // Invalidate cache
     await this.invalidateCommentsCache();
+
+    // Emit socket event for real-time update
+    emitCommentCreated(comment.toJSON());
 
     return comment;
   }
@@ -113,29 +126,56 @@ export class CommentService {
       return JSON.parse(cached);
     }
 
-    // Fetch from database
-    const [comments, total] = await Promise.all([
-      Comment.find(query)
-        .sort(sort)
-        .skip(skip)
-        .limit(limit)
-        .populate("userId", "name email avatar")
-        .lean(),
+    // Fetch from database with aggregation for replyCount
+    const pipeline: any[] = [
+      { $match: query },
+      { $sort: sort },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: "comments",
+          localField: "_id",
+          foreignField: "parentId",
+          pipeline: [{ $match: { isDeleted: false } }], // Only count non-deleted
+          as: "replies",
+        },
+      },
+      {
+        $addFields: {
+          replyCount: { $size: "$replies" },
+        },
+      },
+      {
+        $project: {
+          replies: 0,
+        },
+      },
+    ];
+
+    const [commentsRaw, total] = await Promise.all([
+      Comment.aggregate(pipeline),
       Comment.countDocuments(query),
     ]);
 
+    await Comment.populate(commentsRaw, {
+      path: "userId",
+      select: "name email avatar",
+    });
+
     // Transform comments to include user data
-    const commentsWithUser: CommentWithUser[] = comments.map(
+    const commentsWithUser: CommentWithUser[] = commentsRaw.map(
       (comment: any) => ({
         ...comment,
         id: comment._id.toString(),
-        userId: comment.userId._id.toString(),
+        userId: comment.userId?._id?.toString() || "", // Handle potential pop failure
         user: {
-          id: comment.userId._id.toString(),
-          name: comment.userId.name,
-          email: comment.userId.email,
-          avatar: comment.userId.avatar,
+          id: comment.userId?._id?.toString() || "",
+          name: comment.userId?.name || "Unknown",
+          email: comment.userId?.email || "",
+          avatar: comment.userId?.avatar,
         },
+        replyCount: comment.replyCount || 0,
       }),
     );
 
@@ -165,6 +205,11 @@ export class CommentService {
       return null;
     }
 
+    const replyCount = await Comment.countDocuments({
+      parentId: comment._id,
+      isDeleted: false,
+    });
+
     return {
       ...comment,
       id: (comment as any)._id.toString(),
@@ -175,6 +220,7 @@ export class CommentService {
         email: (comment as any).userId.email,
         avatar: (comment as any).userId.avatar,
       },
+      replyCount,
     } as unknown as CommentWithUser;
   }
 
@@ -203,9 +249,13 @@ export class CommentService {
     comment.editedAt = new Date();
 
     await comment.save();
+    await comment.populate("userId", "name email avatar");
 
     // Invalidate cache
     await this.invalidateCommentsCache();
+
+    // Emit socket event for real-time update
+    emitCommentUpdated(comment.toJSON());
 
     return comment;
   }
@@ -231,6 +281,12 @@ export class CommentService {
 
     // Invalidate cache
     await this.invalidateCommentsCache();
+
+    // Emit socket event for real-time update
+    emitCommentDeleted(
+      commentId,
+      comment.parentId ? comment.parentId.toString() : undefined,
+    );
   }
 
   // React to comment (like/dislike)
@@ -282,9 +338,13 @@ export class CommentService {
     }
 
     await comment.save();
+    await comment.populate("userId", "name email avatar");
 
     // Invalidate cache
     await this.invalidateCommentsCache();
+
+    // Emit socket event for real-time update
+    emitCommentReacted(comment.toJSON());
 
     return comment;
   }

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSocket Test Client</title>
+    <script src="https://cdn.socket.io/4.8.3/socket.io.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        margin-top: 0;
+      }
+      .status {
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        font-weight: bold;
+      }
+      .connected {
+        background: #d4edda;
+        color: #155724;
+      }
+      .disconnected {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      .events {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 4px;
+        max-height: 400px;
+        overflow-y: auto;
+        margin-bottom: 20px;
+      }
+      .event {
+        padding: 8px;
+        margin: 5px 0;
+        border-left: 3px solid #007bff;
+        background: white;
+        font-size: 14px;
+      }
+      .event-type {
+        font-weight: bold;
+        color: #007bff;
+      }
+      .event-time {
+        color: #6c757d;
+        font-size: 12px;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 10px;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      input {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        width: 200px;
+        margin-right: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔌 WebSocket Test Client</h1>
+
+      <div id="status" class="status disconnected">⚫ Disconnected</div>
+
+      <div style="margin-bottom: 20px">
+        <input type="text" id="tokenInput" placeholder="JWT Token (optional)" />
+        <button onclick="connect()">Connect</button>
+        <button onclick="disconnect()">Disconnect</button>
+      </div>
+
+      <div style="margin-bottom: 20px">
+        <input type="text" id="threadId" placeholder="Comment/Thread ID" />
+        <button onclick="joinThread()">Join Thread</button>
+        <button onclick="leaveThread()">Leave Thread</button>
+      </div>
+
+      <div style="margin-bottom: 20px">
+        <button onclick="clearEvents()">Clear Events</button>
+      </div>
+
+      <h3>Real-time Events:</h3>
+      <div id="events" class="events">
+        <p style="color: #6c757d">Waiting for events...</p>
+      </div>
+    </div>
+
+    <script>
+      let socket = null;
+
+      function connect() {
+        const token = document.getElementById("tokenInput").value;
+
+        const options = {
+          transports: ["websocket", "polling"],
+        };
+
+        if (token) {
+          options.auth = { token };
+        }
+
+        socket = io("http://localhost:5000", options);
+
+        socket.on("connect", () => {
+          updateStatus(true);
+          addEvent("connect", "Connected to server");
+        });
+
+        socket.on("disconnect", () => {
+          updateStatus(false);
+          addEvent("disconnect", "Disconnected from server");
+        });
+
+        socket.on("connect_error", (error) => {
+          addEvent("error", `Connection error: ${error.message}`);
+        });
+
+        // Comment events
+        socket.on("comment:created", (comment) => {
+          addEvent(
+            "comment:created",
+            `New comment: "${comment.content}" by ${comment.user?.name || "Unknown"}`,
+          );
+        });
+
+        socket.on("comment:updated", (comment) => {
+          addEvent("comment:updated", `Comment updated: "${comment.content}"`);
+        });
+
+        socket.on("comment:deleted", ({ id }) => {
+          addEvent("comment:deleted", `Comment deleted: ${id}`);
+        });
+
+        socket.on("comment:reacted", (comment) => {
+          addEvent(
+            "comment:reacted",
+            `Comment reaction: ${comment.likes.length} likes, ${comment.dislikes.length} dislikes`,
+          );
+        });
+
+        socket.on("comment:reply", (reply) => {
+          addEvent(
+            "comment:reply",
+            `New reply: "${reply.content}" by ${reply.user?.name || "Unknown"}`,
+          );
+        });
+      }
+
+      function disconnect() {
+        if (socket) {
+          socket.disconnect();
+          socket = null;
+        }
+      }
+
+      function joinThread() {
+        const threadId = document.getElementById("threadId").value;
+        if (socket && threadId) {
+          socket.emit("join:thread", threadId);
+          addEvent("join:thread", `Joined thread: ${threadId}`);
+        } else {
+          alert("Please connect first and enter a thread ID");
+        }
+      }
+
+      function leaveThread() {
+        const threadId = document.getElementById("threadId").value;
+        if (socket && threadId) {
+          socket.emit("leave:thread", threadId);
+          addEvent("leave:thread", `Left thread: ${threadId}`);
+        } else {
+          alert("Please connect first and enter a thread ID");
+        }
+      }
+
+      function updateStatus(connected) {
+        const statusDiv = document.getElementById("status");
+        if (connected) {
+          statusDiv.className = "status connected";
+          statusDiv.innerHTML = "🟢 Connected";
+        } else {
+          statusDiv.className = "status disconnected";
+          statusDiv.innerHTML = "⚫ Disconnected";
+        }
+      }
+
+      function addEvent(type, message) {
+        const eventsDiv = document.getElementById("events");
+        const event = document.createElement("div");
+        event.className = "event";
+
+        const now = new Date().toLocaleTimeString();
+        event.innerHTML = `
+        <span class="event-type">${type}</span>
+        <span class="event-time">${now}</span>
+        <div>${message}</div>
+      `;
+
+        eventsDiv.insertBefore(event, eventsDiv.firstChild);
+      }
+
+      function clearEvents() {
+        document.getElementById("events").innerHTML =
+          '<p style="color: #6c757d;">Waiting for events...</p>';
+      }
+
+      // Auto-connect on load
+      window.onload = () => {
+        connect();
+      };
+    </script>
+  </body>
+</html>

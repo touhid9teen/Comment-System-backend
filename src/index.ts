@@ -81,7 +81,12 @@ const initializeServices = async () => {
   configurePassport();
 };
 
-await initializeServices();
+try {
+  await initializeServices();
+} catch (error) {
+  console.error("Failed to initialize services:", error);
+  process.exit(1);
+}
 
 // Initialize Passport BEFORE routes
 app.use(passport.initialize());

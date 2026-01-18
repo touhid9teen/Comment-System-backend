@@ -3,18 +3,14 @@ import { createClient } from "redis";
 import { config } from "./env.js";
 
 export const connectMongoDB = async () => {
-  try {
-    if (config.NODE_ENV === "development") {
-      mongoose.set("debug", true);
-    }
-    await mongoose.connect(config.MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-    });
-    console.log("MongoDB connected");
-  } catch (error) {
-    console.error("MongoDB connection error:", error);
+  if (config.NODE_ENV === "development") {
+    mongoose.set("debug", true);
   }
+  await mongoose.connect(config.MONGODB_URI, {
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+  });
+  console.log("MongoDB connected");
 };
 
 // Redis Connection

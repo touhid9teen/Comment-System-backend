@@ -42,7 +42,12 @@ class AuthController {
       res.redirect(`${config.CLIENT_URL}`);
     } catch (error) {
       console.error("Google callback error:", error);
-      res.redirect(`${config.CLIENT_URL}/login?error=auth_failed`);
+      // Redirect to frontend with error
+      const errorMessage =
+        error instanceof Error ? error.message : "Authentication failed";
+      res.redirect(
+        `${config.CLIENT_URL}/login?error=${encodeURIComponent(errorMessage)}`,
+      );
     }
   }
 

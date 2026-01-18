@@ -1,6 +1,7 @@
+import jwt from "jsonwebtoken";
+import type { JwtPayload } from "jsonwebtoken";
 import type { Request, Response } from "express";
 import { OAuth2Client } from "google-auth-library";
-import jwt from "jsonwebtoken";
 import authService from "../services/authService.js";
 import { config } from "../config/env.js";
 import { redisClient } from "../config/database.js";
@@ -22,7 +23,7 @@ class AuthController {
       await redisClient.setEx(
         `refresh:${user._id}`,
         7 * 24 * 60 * 60,
-        refreshToken
+        refreshToken,
       );
 
       // Use secure cookies instead of query params
@@ -81,7 +82,7 @@ class AuthController {
       await redisClient.setEx(
         `refresh:${user._id}`,
         7 * 24 * 60 * 60,
-        refreshToken
+        refreshToken,
       );
 
       res.status(200).json({
@@ -179,7 +180,7 @@ class AuthController {
       }
 
       // Blacklist access token
-      const decoded = jwt.decode(token) as jwt.JwtPayload | null;
+      const decoded = jwt.decode(token) as JwtPayload | null;
       if (decoded && decoded.exp) {
         const ttl = decoded.exp - Math.floor(Date.now() / 1000);
 

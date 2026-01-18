@@ -2,6 +2,8 @@ import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import User from "../models/User.js";
 import { config } from "./env.js";
+import type { Profile } from "passport-google-oauth20";
+import type { VerifyCallback } from "passport-oauth2";
 
 export const configurePassport = () => {
   passport.use(
@@ -12,7 +14,12 @@ export const configurePassport = () => {
         callbackURL: "/api/auth/google/callback",
         passReqToCallback: false, // Don't pass request to callback
       },
-      async (accessToken, refreshToken, profile, done) => {
+      async (
+        accessToken: string,
+        refreshToken: string,
+        profile: Profile,
+        done: VerifyCallback,
+      ) => {
         try {
           // Check if user exists
           let user = await User.findOne({ oauthId: profile.id });
@@ -51,8 +58,8 @@ export const configurePassport = () => {
         } catch (error) {
           done(error as any, undefined);
         }
-      }
-    )
+      },
+    ),
   );
 
   passport.serializeUser((user: any, done) => {

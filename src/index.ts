@@ -42,31 +42,34 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Custom sanitization middleware (replaces express-mongo-sanitize)
-app.use((req, res, next) => {
-  const sanitizeObject = (obj: any): any => {
-    if (obj === null || obj === undefined) return obj;
-    if (typeof obj !== "object") return obj;
+// Custom sanitization middleware (replaces express-mongo-sanitize)
+app.use(
+  (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const sanitizeObject = (obj: any): any => {
+      if (obj === null || obj === undefined) return obj;
+      if (typeof obj !== "object") return obj;
 
-    if (Array.isArray(obj)) {
-      return obj.map(sanitizeObject);
-    }
-
-    const sanitized: any = {};
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        // Remove $ and . from keys to prevent MongoDB injection
-        const sanitizedKey = key.replace(/^\$|^\./g, "");
-        sanitized[sanitizedKey] = sanitizeObject(obj[key]);
+      if (Array.isArray(obj)) {
+        return obj.map(sanitizeObject);
       }
-    }
-    return sanitized;
-  };
 
-  req.body = sanitizeObject(req.body);
-  req.params = sanitizeObject(req.params);
+      const sanitized: any = {};
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          // Remove $ and . from keys to prevent MongoDB injection
+          const sanitizedKey = key.replace(/^\$|^\./g, "");
+          sanitized[sanitizedKey] = sanitizeObject(obj[key]);
+        }
+      }
+      return sanitized;
+    };
 
-  next();
-});
+    req.body = sanitizeObject(req.body);
+    req.params = sanitizeObject(req.params);
+
+    next();
+  },
+);
 
 // Database Connections
 import passport from "passport";

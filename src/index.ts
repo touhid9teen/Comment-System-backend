@@ -10,8 +10,31 @@ import authRoutes from "./routes/authRoutes.js";
 const app = express();
 
 // Middleware
-app.use(cors({ origin: config.CLIENT_URL, credentials: true }));
-app.use(helmet());
+const allowedOrigins = [config.CLIENT_URL, ...config.ALLOWED_ORIGINS];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+      if (
+        allowedOrigins.includes(origin) ||
+        config.NODE_ENV === "development"
+      ) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  }),
+);
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+);
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -81,7 +104,7 @@ app.use(
     err: any,
     _req: express.Request,
     res: express.Response,
-    _next: express.NextFunction
+    _next: express.NextFunction,
   ) => {
     console.error("Unhandled Error:", err);
     res.status(500).json({
@@ -89,7 +112,7 @@ app.use(
       message: "Internal server error",
       error: config.NODE_ENV === "development" ? err.message : undefined,
     });
-  }
+  },
 );
 
 const PORT = config.PORT;

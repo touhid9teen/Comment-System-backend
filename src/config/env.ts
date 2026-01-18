@@ -32,6 +32,7 @@ interface EnvConfig {
   BCRYPT_ROUNDS: number;
   WS_PORT: number;
   SESSION_SECRET: string;
+  ALLOWED_ORIGINS: string[];
 }
 
 export const config: EnvConfig = {
@@ -57,6 +58,9 @@ export const config: EnvConfig = {
   BCRYPT_ROUNDS: parseInt(process.env.BCRYPT_ROUNDS || "10", 10),
   WS_PORT: parseInt(process.env.WS_PORT || "5000", 10),
   SESSION_SECRET: process.env.SESSION_SECRET || "",
+  ALLOWED_ORIGINS: (process.env.ALLOWED_ORIGINS || "")
+    .split(",")
+    .filter(Boolean),
 };
 
 // Validate critical environment variables

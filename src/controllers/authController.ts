@@ -18,24 +18,27 @@ class AuthController {
         });
       }
 
-      // Generate tokens
       const { accessToken, refreshToken } = authService.generateTokens(user);
-
-      // Store refresh token in Redis
       await redisClient.setEx(
-        `refresh:${(user as any)._id}`,
+        `refresh:${user._id}`,
         7 * 24 * 60 * 60,
-        refreshToken,
+        refreshToken
       );
 
-      // Redirect to frontend with tokens (or set cookies)
-      // For this example, we'll redirect with tokens in query params
-      // In production, consider using secure cookies or a temporary code exchange flow
+      // Use secure cookies instead of query params
+      res.cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 15 * 60 * 1000, // 15 minutes
+      });
 
-      const clientUrl = config.CLIENT_URL; // e.g., http://localhost:3000
-      res.redirect(
-        `${clientUrl}/auth/success?accessToken=${accessToken}&refreshToken=${refreshToken}`,
-      );
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      res.redirect(`${config.CLIENT_URL}`);
     } catch (error) {
       console.error("Google callback error:", error);
       res.redirect(`${config.CLIENT_URL}/login?error=auth_failed`);
@@ -78,7 +81,7 @@ class AuthController {
       await redisClient.setEx(
         `refresh:${user._id}`,
         7 * 24 * 60 * 60,
-        refreshToken,
+        refreshToken
       );
 
       res.status(200).json({

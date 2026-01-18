@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import { config } from "./config/env.js";
 import { connectMongoDB, connectRedis } from "./config/database.js";
 import authRoutes from "./routes/authRoutes.js";
+import commentRoutes from "./routes/commentRoutes.js";
 
 const app = express();
 
@@ -84,6 +85,7 @@ app.use(passport.initialize());
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/comments", commentRoutes);
 
 // Health check
 app.get("/health", (_req, res) => {

@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface IUser extends Document {
   _id: Types.ObjectId;
+  id: string; // Add this for convenience
   name: string;
   email: string;
   password?: string | null;
@@ -64,6 +65,8 @@ const userSchema = new Schema<IUser>(
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   },
 );
 

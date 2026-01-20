@@ -105,6 +105,7 @@ JWT_REFRESH_EXPIRE=7d
 # WebSocket
 WS_PORT=5001 # Optional, defaults to sharing HTTP port if not split
 SESSION_SECRET=your_session_secret
+SERVER_URL=SERVER_URL
 ```
 
 ### 4. Build and Run
